@@ -21,13 +21,18 @@ double sech(double x) {
     return 1.0 / cosh(x);
 }
 
+/*
+ * Potential function w(x)
+ */
+
 double w(double x) {
     return 1.0  - 2.0 * pow(sech(3.0 * (x - L / 2.0)/ (2 * R_g)),2.0);
 }
 
 /*
- * FFTW code, though seems to have same issue as code above. Peak height is largely affected by b
+ * Designed to increment q^(n) to q^(n+1/3) for two steps in the Psuedo spectral method.
  */
+
 
 void apply_q_operator(double q[M_x]) {
     for(int j = 0; j < M_x; j++) {
@@ -40,16 +45,22 @@ void apply_q_operator(double q[M_x]) {
     }
 }
 
+/*
+ * The successful method of 3 ways.
+ */
+
 void another_way(double q[M_x]) {
+
+    //Data structures to hold the FFT transform data.
+    fftw_plan p1,p2;
+    fftw_complex* a_j = (fftw_complex*)fftw_malloc(sizeof(fftw_complex) * M_x);
+    fftw_complex* h_j = (fftw_complex*)fftw_malloc(sizeof(fftw_complex) * M_x);
+    fftw_complex* q_complex = (fftw_complex*)fftw_malloc(sizeof(fftw_complex) * M_x);
     for(int m = 0; m < M_x; m++) {
         q[m] = q_0;
     }
-
     for(int n = 0; n < N_s; n++) {
-        fftw_plan p1,p2;
-        fftw_complex* a_j = (fftw_complex*)fftw_malloc(sizeof(fftw_complex) * M_x);
-        fftw_complex* h_j = (fftw_complex*)fftw_malloc(sizeof(fftw_complex) * M_x);
-        fftw_complex* q_complex = (fftw_complex*)fftw_malloc(sizeof(fftw_complex) * M_x);
+
         //Initialise M column vector.
         //Calculate next step and get q^(n+1/3)
         apply_q_operator(q);
@@ -57,9 +68,11 @@ void another_way(double q[M_x]) {
             q_complex[i][0] = q[i];
             q_complex[i][1] = 0;
         }
+        //Populate the q complex array.
         p1 = fftw_plan_dft_1d(M_x, q_complex, a_j, FFTW_FORWARD, FFTW_ESTIMATE | FFTW_PRESERVE_INPUT);
         fftw_execute(p1);
         fftw_destroy_plan(p1);
+        //Performed the FFT and now modify the coefficients
         for(int i = 0; i <= M_x/2; i++) {
             h_j[i][0] = a_j[i][0] * exp(-2.0 * pow(M_PI,2.0) * pow(b,2.0) * delta_s * pow((double)i,2.0) / (3.0 * L * L));
             h_j[i][1] = a_j[i][1] * exp(-2.0 * pow(M_PI,2.0) * pow(b,2.0) * delta_s * pow((double)i,2.0) / (3.0 * L * L));
@@ -78,13 +91,16 @@ void another_way(double q[M_x]) {
             q_complex[i][1] /= M_x;
             q[i] = q_complex[i][0];
         }
+        //Inversed FFT to obtain q^(n+2/3)
         apply_q_operator(q);
-        fftw_free(h_j);
-        fftw_free(a_j);
-        fftw_free(q_complex);
-        fftw_cleanup();
-    }
+        //Apply Q operator to get q^(n+1)
+        //Cleaning up.
 
+    }
+    fftw_free(h_j);
+    fftw_free(a_j);
+    fftw_free(q_complex);
+    fftw_cleanup();
 
 }
 
@@ -95,8 +111,6 @@ int main(int argc, char** argv) {
     for(int i = 0; i < M_x; i++) {
         //double x = (double)L / (double)M_x * (double)i;
         double x = L / (M_x+1) * i;
-        //Due to FFTReal scaling. And the fact it's been scaled N_s times as well as the fact that due to complex coefficients, the output is actually (M_x/2) for what it is divided by when
-        //scaling. This results in a 1/(N_s * M_x / 2) scaling, so to fix this:
         double actual_value = q[i];
 
         output << x << "," << actual_value << "," << w(x) <<  '\n';
