@@ -11,15 +11,15 @@ Dependencies:
 
 # Build instructions (Linux)
 
-mkdir build
-cd build
-cmake ..
-make
+mkdir build \
+cd build \
+cmake .. \
+make \
 
 # Running instructions (Linux)
 
-cd build
-./single_chain
+cd build \
+./single_chain \
 
 This will then dump all of the 'useful' data into an output.csv from which can
 be post processed in other software such as GNUPlot, this currently just describes the
