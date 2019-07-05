@@ -34,5 +34,5 @@ For a externally applied field given by
 Nw(x)= (1.0  - 2.0 * pow(sech(3.0 * (x - L / 2.0)/ (2 * R_g)),2.0))
 
 With chain length of 10, 512 integration steps, delta s = 10/512, 512 grid points in the x direction, initial q of 1.0, 15 as the chain gyration radius, box length of 10 and delta x as 10 R_g / 512.
-Produces the following plots of both density (green) and q partition plot (purple):
+Produces the following plots of both density (green) and q partition plot (purple): \
 <img src="figure.png" style="width:200px;height:200px;">
