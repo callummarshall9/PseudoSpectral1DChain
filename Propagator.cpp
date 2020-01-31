@@ -8,7 +8,7 @@
 #include <iostream>
 #include "Propagator.h"
 
-Propagator::Propagator(int M_x, int N_s, double L, double N, double R_g, double f, double flory_higgs) : M_x(M_x), N_s(N_s), R_g(R_g), L(L), f(f), N(N), flory_higgs(flory_higgs) {
+Propagator::Propagator(int M_x, int N_s, double L, double N, double R_g, double f, double flory_huggins) : M_x(M_x), N_s(N_s), R_g(R_g), L(L), f(f), N(N), flory_huggins(flory_huggins) {
     //M_x collaction points.
     //N_s integration steps.
     //L Box Length (R_g).
@@ -19,17 +19,16 @@ Propagator::Propagator(int M_x, int N_s, double L, double N, double R_g, double 
 
     q = new double*[M_x];
     for(int i = 0; i < M_x; i++) {
-        q[i] = new double[N_s];
-        for(int j = 0; j < N_s; j++) {
-            q[i][j] = 1.0;
-        }
+        q[i] = new double[N_s+1];
+    }
+    for(int m = 0; m < M_x; m++) {
+        q[m][0] = 1;
     }
     a_j = (fftw_complex*)fftw_malloc(sizeof(fftw_complex) * M_x);
     h_j = (fftw_complex*)fftw_malloc(sizeof(fftw_complex) * M_x);
     q_complex = (fftw_complex*)fftw_malloc(sizeof(fftw_complex) * M_x);
     p1 = fftw_plan_dft_1d(M_x, q_complex, a_j, FFTW_FORWARD, FFTW_ESTIMATE);
     p2 = fftw_plan_dft_1d(M_x, h_j, q_complex, FFTW_BACKWARD, FFTW_ESTIMATE);
-
 }
 
 void Propagator::Output_Parameters() {
@@ -40,6 +39,7 @@ void Propagator::Output_Parameters() {
     std::cout << "R_g: " << R_g << '\n';
     std::cout << "Delta_x: " << delta_x << '\n';
     std::cout << "Delta s: " << delta_s << '\n';
+    std::cout << "b: " << b << '\n';
 }
 
 double Propagator::GetDeltaX() {
@@ -56,6 +56,8 @@ double Propagator::GetF() {
 
 
 
+
+
 void Propagator::Propagate() {
     //Step along ds.
     for(int i = 0; i < N_s; i++) {
@@ -69,7 +71,6 @@ inline double sech(double x) {
 
 
 double Propagator::w(double x, int n) {
-    std::cout << "Using the rubbish one." << '\n';
     return (1.0  - 2.0 * pow(sech(3.0 * (x - L / 2.0)/ (2 * R_g)),2.0)) / N;
 
 }
@@ -144,15 +145,74 @@ void Propagator::Propagate_n(int n) {
 
     //Apply Q operator to get q^(n+1) according to Pseudo Spectral Algorithm 3.1: Continuous Gaussian Chain Step 6.
     Apply_Q_Operator(q, n+1,n+1);
+
+}
+
+void Propagator::Cleanup() {
+    //Cleaning up.
+    fftw_destroy_plan(p1);
+    fftw_destroy_plan(p2);
+    fftw_free(h_j);
+    fftw_free(a_j);
+    fftw_free(q_complex);
+    fftw_cleanup();
 }
 
 void Propagator::Save(const char *file_name) {
     remove(file_name);
     std::ofstream output;
     output.open(file_name);
+    output << "x,q,w,density" << '\n';
+    double phi_A[M_x];
+    double phi_B[M_x];
     for(int i = 0; i < M_x; i++) {
-        double x = delta_x * i;
-        output << x << "," << q[i][N_s - 1] << "," << w(x,N_s-1) << '\n';
+        double x = delta_x * (double)i ;
+        // Simpsons 1/3 rule to integrate the density using Equation 3.243
+        //Source: https://en.wikipedia.org/wiki/Simpson%27s_rule
+        double sum = 0;
+        double h = delta_s;
+        for(int s = 0; s < f * (N_s+1); s++) {
+            if(s == 0) {
+                sum = sum + h / 3 * q[i][s] * q[i][N_s - s];
+            } else if(s == N_s) {
+                sum = sum + h / 3 * q[i][s] * q[i][N_s - s];
+            } else if(s % 2 == 1) {
+                sum = sum + h / 3 * 4 * q[i][s] * q[i][N_s - s];
+            } else if(s % 2 == 0) {
+                sum = sum + h / 3 * 2 * q[i][s] * q[i][N_s - s];
+            }
+        }
+        //Obtain the zero frequency component as Q(w) = a_0(N), according to FFTW
+        //the zero frequency is at index 0.
+        sum = sum / (Q * N);
+        phi_A[i] = sum;
+    }
+    for(int i = 0; i < M_x; i++) {
+        double x = delta_x * (double)i ;
+        // Simpsons 1/3 rule to integrate the density using Equation 3.243
+        //Source: https://en.wikipedia.org/wiki/Simpson%27s_rule
+        double sum = 0;
+        double h = delta_s;
+        for(int s = f*(N_s+1); s < (N_s+1); s++) {
+            if(s == 0) {
+                sum = sum + h / 3 * q[i][s] * q[i][N_s - s];
+            } else if(s == N_s) {
+                sum = sum + h / 3 * q[i][s] * q[i][N_s - s];
+            } else if(s % 2 == 1) {
+                sum = sum + h / 3 * 4 * q[i][s] * q[i][N_s - s];
+            } else if(s % 2 == 0) {
+                sum = sum + h / 3 * 2 * q[i][s] * q[i][N_s - s];
+            }
+        }
+        //Obtain the zero frequency component as Q(w) = a_0(N), according to FFTW
+        //the zero frequency is at index 0.
+        sum = sum / (Q * N);
+        phi_B[i] = sum;
+    }
+    for(int i = 0; i < M_x; i++) {
+        double x = delta_x * (double)i ;
+        double density = phi_A[i] + phi_B[i];
+        output << x << "," << q[i][N_s - 1] << "," << w(x,N_s-1) << "," << density << '\n';
     }
     output.close();
 }

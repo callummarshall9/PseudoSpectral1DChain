@@ -9,30 +9,26 @@
 #define PARAMETER_SET
 
 //Simulates single chain of homopolymer.
+const double N = 10; // Chain length
+const double q_0 = 1.0;
 
 #ifdef PARAMETER_SET
 //Fredrickson.
-const double N = 10; // Chain length
 const int N_s = 512; // Number of integration steps along the chain
-const double delta_s = N/(N_s); // chain integration step size
 const int M_x = 512; // Grid points in x direction
-const double q_0 = 1.0;
 const double R_g =  15 ; // chain gyration radius (unperturbed radius of gyration)
 const double b = sqrt(6) * R_g / sqrt(N);//Kuhn segment length
 const double L = 10.0 * R_g; // box length
-const double delta_x = L / M_x;
 #else
 //Chen,Kim and Alexander-Kaiz
-const double N = 10; // Chain length
 const int N_s = 2001; // Number of integration steps along the chain
-const double delta_s = N/(N_s); // chain integration step size
 const int M_x = 256; // Grid points in x direction
-const double q_0 = 1.0;
 const double R_g =  1 ; // chain gyration radius (unperturbed radius of gyration)
 const double b = sqrt(6) * R_g / sqrt(N);//Kuhn segment length
 const double L = 3.2 * R_g; // box length
-const double delta_x = L / M_x;
 #endif
+const double delta_s = N/(N_s); // chain integration step size
+const double delta_x = L / M_x;
 /*
  * Mathematical identity
  */
@@ -61,8 +57,9 @@ inline double w(double x) {
 }*/
 
 int main(int argc, char** argv) {
-    SCFT propagator(M_x,N_s,L,N,R_g,0.5, 13.0, 0.0001);
+    SCFT propagator(M_x,N_s,L,N,R_g,0.5, 13.0, 0.01, SimpleMixing);
     propagator.Run();
     propagator.Save("hell.csv");
+    propagator.Cleanup();
     return 0;
 }
