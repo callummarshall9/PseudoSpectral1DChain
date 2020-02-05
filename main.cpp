@@ -9,7 +9,7 @@
 #define PARAMETER_SET
 
 //Simulates single chain of homopolymer.
-const double N = 10; // Chain length
+const double N = 1.0; // Chain length
 const double q_0 = 1.0;
 
 #ifdef PARAMETER_SET
@@ -57,9 +57,9 @@ inline double w(double x) {
 }*/
 
 int main(int argc, char** argv) {
-    SCFT propagator(M_x,N_s,L,N,R_g,0.5, 13.0, 0.01, SimpleMixing);
+    //xN=13, hence flory huggins x = 13/N.
+    SCFT propagator(M_x,N_s,L,N,R_g,0.5, 13.0 / N, 0.2, SimpleMixing);
     propagator.Run();
     propagator.Save("hell.csv");
-    propagator.Cleanup();
     return 0;
 }

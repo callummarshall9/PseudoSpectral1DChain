@@ -12,10 +12,6 @@ class qDaggerPropagator : public Propagator {
 public:
     qDaggerPropagator(int M_x, int N_s, double L, double N, double R_g, double f, double flory_higgs, FieldMethod field_method);
     double w(double x, int n) override;
-    void Set_Fields(double* w_A, double* w_B);
-private:
-    double *w_A, *w_B;
-    FieldMethod field_method;
 };
 
 

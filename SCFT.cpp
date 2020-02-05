@@ -15,11 +15,12 @@ SCFT::SCFT(int M_x, int N_s, double L, double N, double R_g, double f, double fl
     w_B = new double[M_x];
 
     for(int i = 0; i < M_x; i++) {
-        //w_A[i] = dist(gen) * 0.1;
-        //w_B[i] = dist(gen) * 0.1;
-        w_A[i] = 1;
-        w_B[i] = 0;
+        w_A[i] = dist(gen) * 0.1;
+        w_B[i] = dist(gen) * 0.1;
+        //w_A[i] = 1;
+        //w_B[i] = 0;
     }
+
     q_propagator.Set_Fields(w_A, w_B);
     q_star_propagator.Set_Fields(w_A, w_B);
     phi_A = new double[M_x];
@@ -28,27 +29,34 @@ SCFT::SCFT(int M_x, int N_s, double L, double N, double R_g, double f, double fl
     delta_x = L / M_x;
 }
 
-double SCFT::Determine_Error() {
+double SCFT::Determine_Error(int index) {
+    bool output = false;
+    //std::ofstream output_fields("output_fields_" + std::to_string(index) + ".csv");
+
     double sum = 0.0;
     for(int i = 0; i < M_x; i++) {
-        double compressibility_condiiton = 0.5 * (w_A[i] + w_B[i] - flory_huggins);
-        double w_a_out = flory_huggins * phi_B[i] + compressibility_condiiton;
-        double w_b_out = flory_huggins * phi_A[i] + compressibility_condiiton;
-        sum = sum + (pow(abs(w_a_out - w_A[i]), 2.0) + pow(abs(w_b_out - w_B[i]), 2.0)) * delta_x;
+        double compressibility_condiiton = 0.5 * (w_A[i] + w_B[i] - flory_huggins * N);
+        double w_a_out = flory_huggins * N * phi_B[i] + compressibility_condiiton;
+        double w_b_out = flory_huggins * N * phi_A[i] + compressibility_condiiton;
+        //output_fields << i << "," << w_A[i] << "," <<  w_a_out << "," << w_B[i] << "," << w_b_out << '\n';
+        double difference_in_w_A = fabs(pow(w_a_out - w_A[i], 2.0));
+        double difference_in_w_B = fabs(pow(w_b_out - w_B[i], 2.0));
+        sum = sum + (difference_in_w_A + difference_in_w_B) * delta_x;
     }
-    sum = sqrt(1.0 / M_x * sum) * flory_huggins;
+    sum = sqrt(1.0 / (M_x * delta_x) * sum) / (flory_huggins * N);
+    //output_fields.close();
     return sum;
 }
 
 double SCFT::DetermineVariance() {
     double mean_squares = 0.0;
     for(int i = 0; i < M_x; i++) {
-        mean_squares += pow(phi_B[i],2.0);
+        mean_squares += pow(phi_A[i],2.0);
     }
     mean_squares /= M_x;
     double mean = 0.0;
     for(int i = 0; i < M_x; i++) {
-        mean += phi_B[i];
+        mean += phi_A[i];
     }
     mean /= M_x;
     return mean_squares - mean * mean;
@@ -71,17 +79,18 @@ double SCFT::DetermineVarianceTotal() {
 void SCFT::Update_Fields() {
     if(field_method == Langevindgn) {
         double delta_t = 0.1;
-        double gamma = 0.01;
+        double gamma = 0.1;
         double C = 20000;
+        //Perhaps source of error is by factor of N.
         for (int i = 0; i < M_x; i++) {
             //Note: w_B = omega_- and w_A = omega_+
-            w_B[i] = w_B[i] - delta_t * gamma * delta_x * (-phi_B[i] + 2.0 / flory_huggins * w_B[i]) +
-                     sqrt(delta_t) * gauss_noise(norm_generator);
+            w_B[i] = w_B[i] - delta_t * gamma * delta_x * (-phi_B[i] + 2.0 / (flory_huggins * N) * w_B[i]) +
+                     gauss_noise(norm_generator);
         }
         q_propagator.Propagate();
         q_star_propagator.Propagate();
         Determine_Density_Differences();
-        while (DetermineVariance() > pow(10.0, -5)) {
+        while (DetermineVariance() < pow(10.0, -5)) {
             for (int i = 0; i < M_x; i++) {
                 w_A[i] = w_A[i] - delta_t * gamma * C * (phi_A[i] - 1.0);
             }
@@ -90,10 +99,10 @@ void SCFT::Update_Fields() {
             Determine_Density_Differences();
         }
     } else if(field_method == SimpleMixing) {
-        for(int i =0; i < M_x; i++) {
-            double compressibility_condition = 0.5 * (w_A[i] + w_B[i] - flory_huggins);
-            double w_a_out = flory_huggins * phi_B[i] + compressibility_condition;
-            double w_b_out = flory_huggins * phi_A[i] + compressibility_condition;
+        for(int i = 0; i < M_x; i++) {
+            double compressibility_condition = 0.5 * (w_A[i] + w_B[i] - flory_huggins * N);
+            double w_a_out = flory_huggins * N *  phi_B[i] + compressibility_condition;
+            double w_b_out = flory_huggins * N * phi_A[i] + compressibility_condition;
             w_A[i] = (w_A[i] * (1.0 - mixing_parameter) + mixing_parameter * w_a_out);
             w_B[i] = (w_B[i] * (1.0 - mixing_parameter) + mixing_parameter * w_b_out);
         }
@@ -103,24 +112,33 @@ void SCFT::Update_Fields() {
 
 void SCFT::Run() {
     int index = 1.0;
-    while(Determine_Error() > pow(10.0,-6.0) || sqrt(DetermineVarianceTotal()) > pow(10.0, -6.0)) {
-        std::cout << index << " - Error: " << Determine_Error() << '\n';
-        std::cout << index << " - Boolean Error: " << (Determine_Error() > pow(10.0,-6.0)) << '\n';
+    double field_error_threshold = pow(10.0,-3.0);
+    double variance_threshold = pow(10.0,-5.0);
+    double field_error = Determine_Error(index);
+    double variance_error = sqrt(DetermineVarianceTotal());
+    while(field_error > field_error_threshold || variance_error > variance_threshold) {
+        std::cout << index << " - Error: " << Determine_Error(index) << '\n';
         std::cout << index << " - Stdev: " << sqrt(DetermineVarianceTotal()) << '\n';
-        std::cout << index << " - Boolean Stdev: " << (sqrt(DetermineVarianceTotal()) > pow(10.0, -10.0)) << '\n';
         q_propagator.Propagate();
         q_star_propagator.Propagate();
         Determine_Density_Differences();
         Update_Fields();
         std::string file_name = "hell_" + std::to_string(index) + ".csv";
-        Save(file_name);
+        //Save(file_name);
+        if(index % 200 == 0) {
+            Save(file_name);
+        }
         index++;
+        if(index > 2000) {
+            break;
+        }
+        field_error = Determine_Error(index);
+        variance_error = sqrt(DetermineVarianceTotal());
     }
-
-    std::cout << index << " - Error: " << Determine_Error() << '\n';
-    std::cout << index << " - Boolean Error: " << (Determine_Error() > pow(10.0,-6.0)) << '\n';
-    std::cout << index << " - Stdev: " << sqrt(DetermineVarianceTotal()) << '\n';
-    std::cout << index << " - Boolean Stdev: " << (sqrt(DetermineVarianceTotal()) > pow(10.0, -10.0)) << '\n';
+    std::cout << index << " - Error: " << field_error << '\n';
+    std::cout << index << " - Stdev: " << variance_error << '\n';
+    std::string file_name = "hell_" + std::to_string(index) + ".csv";
+    Save(file_name);
 }
 
 void SCFT::Save(std::string file_name) {
@@ -137,16 +155,13 @@ void SCFT::Save(std::string file_name) {
     output.close();
 }
 
-void SCFT::Cleanup() {
-    q_propagator.Cleanup();
-    q_star_propagator.Cleanup();
-}
+
 
 void SCFT::Determine_Density_Differences() {
     double** q = q_propagator.GetPropagator();
     double** q_star = q_star_propagator.GetPropagator();
-    double q_Q = q_propagator.GetQ();
-    double q_star_Q = q_star_propagator.GetQ();
+    double q_Q = q_propagator.Q;
+    double q_star_Q = q_star_propagator.Q;
     if(q_Q - q_star_Q > pow(10.0, -4.0)) {
         std::cout << "Warning q_Q != q_star_Q" << '\n';
         std::cout << q_Q << "," << q_star_Q << '\n';
@@ -165,49 +180,5 @@ void SCFT::Determine_Density_Differences() {
         }
         phi_B[i] = sum / (Q * N);
     }
-    /*
-    for(int i = 0; i < M_x; i++) {
-        double x = delta_x * (double)i ;
-        // Simpsons 1/3 rule to integrate the density using Equation 3.243
-        //Source: https://en.wikipedia.org/wiki/Simpson%27s_rule
-        double sum = 0;
-        double h = delta_s;
-        for(int s = 0; s < f * (N_s+1); s++) {
-            if(s == 0) {
-                sum = sum + h / 3 * q[i][s] * q_star[i][N_s - s];
-            } else if(s == N_s) {
-                sum = sum + h / 3 * q[i][s] * q_star[i][N_s - s];
-            } else if(s % 2 == 1) {
-                sum = sum + h / 3 * 4 * q[i][s] * q_star[i][N_s - s];
-            } else if(s % 2 == 0) {
-                sum = sum + h / 3 * 2 * q[i][s] * q_star[i][N_s - s];
-            }
-        }
-        //Obtain the zero frequency component as Q(w) = a_0(N), according to FFTW
-        //the zero frequency is at index 0.
-        sum = sum / (Q * N);
-        phi_A[i] = sum;
-    }
-    for(int i = 0; i < M_x; i++) {
-        double x = delta_x * (double)i ;
-        // Simpsons 1/3 rule to integrate the density using Equation 3.243
-        //Source: https://en.wikipedia.org/wiki/Simpson%27s_rule
-        double sum = 0;
-        double h = delta_s;
-        for(int s = f*(N_s+1)+1; s < (N_s+1); s++) {
-            if(s == 0) {
-                sum = sum + h / 3 * q[i][s] * q_star[i][N_s - s];
-            } else if(s == N_s) {
-                sum = sum + h / 3 * q[i][s] * q_star[i][N_s - s];
-            } else if(s % 2 == 1) {
-                sum = sum + h / 3 * 4 * q[i][s] * q_star[i][N_s - s];
-            } else if(s % 2 == 0) {
-                sum = sum + h / 3 * 2 * q[i][s] * q_star[i][N_s - s];
-            }
-        }
-        //Obtain the zero frequency component as Q(w) = a_0(N), according to FFTW
-        //the zero frequency is at index 0.
-        sum = sum / (Q * N);
-        phi_B[i] = sum;
-    }*/
+
 }

@@ -4,38 +4,40 @@
 
 #include <iostream>
 #include <cmath>
+#include "mathutils.h"
 #include "qDaggerPropagator.h"
 #include "FieldMethod.h"
 
-qDaggerPropagator::qDaggerPropagator(int M_x, int N_s, double L, double N, double R_g, double f, double flory_higgs, FieldMethod field_method) : Propagator(M_x, N_s, L, N, R_g, f, flory_higgs), field_method(field_method) {
+qDaggerPropagator::qDaggerPropagator(int M_x, int N_s, double L, double N, double R_g, double f, double flory_higgs, FieldMethod field_method) : Propagator(M_x, N_s, L, N, R_g, f, flory_higgs, field_method) {
 
 }
 
-inline double sech(double x) {
-    return 1.0 / cosh(x);
-}
 
 double qDaggerPropagator::w(double x, int n) {
-    int index = x / this->GetDeltaX();
-    if(field_method == SimpleMixing) {
-        if(n < (this->GetN_s() - this->GetF() * this->GetN_s())) {
-            return w_A[index];
+    int index = x / delta_x;
+    //Scale the fields by N.
+    //Between [0,fN] field = w_A
+    //Between [fN,N] field = w_B
+    //q dagger starts from s=N
+    if(s < (N - f * N)) {//f=0.7, s=0.7N. from other way, s=N-0.7N=0.3N
+        if(field_method == SimpleMixing) {
+            return w_B[index] / N;
+        } else if(field_method == Langevindgn) {
+            return (-w_A[index] + w_B[index]) / N;
         } else {
-            return w_B[index];
-        }
-    } else if(field_method == Langevindgn) {
-        if(n < (this->GetN_s() - this->GetF() * this->GetN_s())) {
-            return (-w_A[index] + w_B[index]) / this->GetN();
-        } else {
-            return (-w_A[index] - w_B[index]) / this->GetN();
+            std::cout << "Error: SCFT method not specified." << '\n';
+            return 0;
         }
     } else {
-        std::cout << "Error: SCFT method not specified." << '\n';
-        return 0;
+        if(field_method == SimpleMixing) {
+            return w_A[index] / N;
+        } else if(field_method == Langevindgn) {
+            return (-w_A[index] - w_B[index]) / N;
+        } else {
+            std::cout << "Error: SCFT method not specified." << '\n';
+            return 0;
+        }
     }
 }
 
-void qDaggerPropagator::Set_Fields(double *w_A, double *w_B) {
-    this->w_A = w_A;
-    this->w_B = w_B;
-}
+

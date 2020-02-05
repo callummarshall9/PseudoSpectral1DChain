@@ -6,9 +6,10 @@
 #include <string>
 #include <fstream>
 #include <iostream>
+#include "mathutils.h"
 #include "Propagator.h"
 
-Propagator::Propagator(int M_x, int N_s, double L, double N, double R_g, double f, double flory_huggins) : M_x(M_x), N_s(N_s), R_g(R_g), L(L), f(f), N(N), flory_huggins(flory_huggins) {
+Propagator::Propagator(int M_x, int N_s, double L, double N, double R_g, double f, double flory_huggins, FieldMethod field_method) : M_x(M_x), N_s(N_s), R_g(R_g), L(L), f(f), N(N), flory_huggins(flory_huggins), field_method(field_method) {
     //M_x collaction points.
     //N_s integration steps.
     //L Box Length (R_g).
@@ -42,32 +43,17 @@ void Propagator::Output_Parameters() {
     std::cout << "b: " << b << '\n';
 }
 
-double Propagator::GetDeltaX() {
-    return delta_x;
-}
-
-int Propagator::GetN_s() {
-    return N_s;
-}
-
-double Propagator::GetF() {
-    return f;
-}
-
-
-
 
 
 void Propagator::Propagate() {
     //Step along ds.
+    s = 0;
     for(int i = 0; i < N_s; i++) {
         Propagate_n(i);
     }
 }
 
-inline double sech(double x) {
-    return 1.0 / cosh(x);
-}
+
 
 
 double Propagator::w(double x, int n) {
@@ -75,7 +61,7 @@ double Propagator::w(double x, int n) {
 
 }
 
-void Propagator::Apply_Q_Operator(double **q, int src_N_s, int dest_N_s) {
+void Propagator::Apply_W_To_Q(double **q, int src_N_s, int dest_N_s) {
     for(int j = 0; j < M_x; j++) {
         double x = delta_x * (double)j;
         q[j][dest_N_s] = q[j][src_N_s] * exp(-1.0 * w(x, src_N_s)   * delta_s  / 2);
@@ -92,22 +78,11 @@ double Propagator::DetermineQ() {
     return 1.0 / M_x * sum;
 }
 
-double Propagator::GetN() {
-    return N;
-}
-
-double Propagator::GetRg() {
-    return R_g;
-}
-
-double Propagator::GetL() {
-    return L;
-}
 
 void Propagator::Propagate_n(int n) {
     //Initialise M column vector.
     //Calculate next step and get q^(n+1/3) according to Pseudo Spectral Algorithm 3.1: Continuous Gaussian Chain Step 2.
-    Apply_Q_Operator(q, n,n+1);//Populate current Q from previous Q.
+    Apply_W_To_Q(q, n,n+1);//Populate current Q from previous Q.
 
     for(int i = 0; i < M_x; i++) {
         q_complex[i][0] = q[i][n+1];
@@ -144,11 +119,12 @@ void Propagator::Propagate_n(int n) {
     //Inversed FFT to obtain q^(n+2/3)
 
     //Apply Q operator to get q^(n+1) according to Pseudo Spectral Algorithm 3.1: Continuous Gaussian Chain Step 6.
-    Apply_Q_Operator(q, n+1,n+1);
+    Apply_W_To_Q(q, n+1,n+1);
+    s = s + delta_s;
 
 }
 
-void Propagator::Cleanup() {
+Propagator::~Propagator() {
     //Cleaning up.
     fftw_destroy_plan(p1);
     fftw_destroy_plan(p2);
@@ -217,11 +193,12 @@ void Propagator::Save(const char *file_name) {
     output.close();
 }
 
+void Propagator::Set_Fields(double *w_A, double *w_B) {
+    this->w_A = w_A;
+    this->w_B = w_B;
+}
+
 double** Propagator::GetPropagator() {
     return q;
 }
 
-double Propagator::GetQ() {
-    return Q;
-    //return DetermineQ();
-}

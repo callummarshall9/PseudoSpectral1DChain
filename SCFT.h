@@ -21,9 +21,8 @@ public:
     SCFT(int M_x, int N_s, double L, double N, double R_g, double f, double flory_huggins, double mixing_parameter, FieldMethod field_type);
     void Run();
     void Determine_Density_Differences();
-    double Determine_Error();
+    double Determine_Error(int index);
     void Save(std::string file_name);
-    void Cleanup();
     double DetermineVariance();
     double DetermineVarianceTotal();
 private:
