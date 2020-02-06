@@ -3,23 +3,24 @@
 //
 
 #include <fstream>
-#include "FieldMethod.h"
 #include "SCFT.h"
 
-SCFT::SCFT(int M_x, int N_s, double L, double N, double R_g, double f, double flory_huggins, double mixing_parameter, FieldMethod field_method) : gen(rd()), dist(0.0,1.0),
-    M_x(M_x), N_s(N_s), L(L), N(N), R_g(R_g), f(f), flory_huggins(flory_huggins), mixing_parameter(mixing_parameter), q_propagator(M_x, N_s, L, N, R_g, f, flory_huggins, field_method),
-                                                                                                                      q_star_propagator(M_x, N_s, L, N, R_g, f, flory_huggins, field_method),
-                                                                                                                      gauss_noise(0, sqrt(2 * 0.00001)),
-                                                                                                                      field_method(field_method) {//TODO: Add sqrt(2.0.01) as parameter.
+SCFT::SCFT(int M_x, int N_s, double L, double N, double R_g, double f, double flory_huggins, double mixing_parameter) : gen(rd()), dist(0.0,1.0),
+    M_x(M_x), N_s(N_s), L(L), N(N), R_g(R_g), f(f), flory_huggins(flory_huggins), mixing_parameter(mixing_parameter), q_propagator(M_x, N_s, L, N, R_g, f, flory_huggins),
+                                                                                                                      q_star_propagator(M_x, N_s, L, N, R_g, f, flory_huggins),
+                                                                                                                      gauss_noise(0, sqrt(2 * 0.00001)) {//TODO: Add sqrt(2.0.01) as parameter.
     w_A = new double[M_x];
     w_B = new double[M_x];
 
     for(int i = 0; i < M_x; i++) {
-        w_A[i] = dist(gen) * 0.1;
-        w_B[i] = dist(gen) * 0.1;
-        //w_A[i] = 1;
-        //w_B[i] = 0;
+        //w_A[i] = dist(gen) * 0.1;
+        //w_B[i] = dist(gen) * 0.1;
+        w_A[i] = 0.0;
+        w_B[i] = 0.0;
     }
+    w_B[0] = -5;
+    int midpoint = M_x / 2;
+    w_B[midpoint] = 5;
 
     q_propagator.Set_Fields(w_A, w_B);
     q_star_propagator.Set_Fields(w_A, w_B);
@@ -77,35 +78,12 @@ double SCFT::DetermineVarianceTotal() {
 }
 
 void SCFT::Update_Fields() {
-    if(field_method == Langevindgn) {
-        double delta_t = 0.1;
-        double gamma = 0.1;
-        double C = 20000;
-        //Perhaps source of error is by factor of N.
-        for (int i = 0; i < M_x; i++) {
-            //Note: w_B = omega_- and w_A = omega_+
-            w_B[i] = w_B[i] - delta_t * gamma * delta_x * (-phi_B[i] + 2.0 / (flory_huggins * N) * w_B[i]) +
-                     gauss_noise(norm_generator);
-        }
-        q_propagator.Propagate();
-        q_star_propagator.Propagate();
-        Determine_Density_Differences();
-        while (DetermineVariance() < pow(10.0, -5)) {
-            for (int i = 0; i < M_x; i++) {
-                w_A[i] = w_A[i] - delta_t * gamma * C * (phi_A[i] - 1.0);
-            }
-            q_propagator.Propagate();
-            q_star_propagator.Propagate();
-            Determine_Density_Differences();
-        }
-    } else if(field_method == SimpleMixing) {
-        for(int i = 0; i < M_x; i++) {
-            double compressibility_condition = 0.5 * (w_A[i] + w_B[i] - flory_huggins * N);
-            double w_a_out = flory_huggins * N *  phi_B[i] + compressibility_condition;
-            double w_b_out = flory_huggins * N * phi_A[i] + compressibility_condition;
-            w_A[i] = (w_A[i] * (1.0 - mixing_parameter) + mixing_parameter * w_a_out);
-            w_B[i] = (w_B[i] * (1.0 - mixing_parameter) + mixing_parameter * w_b_out);
-        }
+    for(int i = 0; i < M_x; i++) {
+        double compressibility_condition = 0.5 * (w_A[i] + w_B[i] - flory_huggins * N);
+        double w_a_out = flory_huggins * N *  phi_B[i] + compressibility_condition;
+        double w_b_out = flory_huggins * N * phi_A[i] + compressibility_condition;
+        w_A[i] = (w_A[i] * (1.0 - mixing_parameter) + mixing_parameter * w_a_out);
+        w_B[i] = (w_B[i] * (1.0 - mixing_parameter) + mixing_parameter * w_b_out);
     }
 
 }
@@ -113,7 +91,7 @@ void SCFT::Update_Fields() {
 void SCFT::Run() {
     int index = 1.0;
     double field_error_threshold = pow(10.0,-3.0);
-    double variance_threshold = pow(10.0,-5.0);
+    double variance_threshold = pow(10.0,-3.0);
     double field_error = Determine_Error(index);
     double variance_error = sqrt(DetermineVarianceTotal());
     while(field_error > field_error_threshold || variance_error > variance_threshold) {

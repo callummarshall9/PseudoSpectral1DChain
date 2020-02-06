@@ -6,7 +6,6 @@
 #include "Propagator.h"
 #include "SCFT.h"
 
-#define PARAMETER_SET
 
 //Simulates single chain of homopolymer.
 const double N = 1.0; // Chain length
@@ -58,7 +57,7 @@ inline double w(double x) {
 
 int main(int argc, char** argv) {
     //xN=13, hence flory huggins x = 13/N.
-    SCFT propagator(M_x,N_s,L,N,R_g,0.5, 13.0 / N, 0.2, SimpleMixing);
+    SCFT propagator(M_x,N_s,L,N,R_g,0.5, 13.0 / N, 0.2);
     propagator.Run();
     propagator.Save("hell.csv");
     return 0;

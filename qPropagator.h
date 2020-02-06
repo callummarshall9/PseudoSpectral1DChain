@@ -5,12 +5,11 @@
 #ifndef SINGLE_CHAIN_QPROPAGATOR_H
 #define SINGLE_CHAIN_QPROPAGATOR_H
 
-#include "FieldMethod.h"
 #include "Propagator.h"
 
 class qPropagator : public Propagator {
 public:
-    qPropagator(int M_x, int N_s, double L, double N, double R_g, double f, double flory_higgs, FieldMethod field_method);
+    qPropagator(int M_x, int N_s, double L, double N, double R_g, double f, double flory_higgs);
     double w(double x, int n) override ;
 };
 

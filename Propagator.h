@@ -3,12 +3,11 @@
 
 
 #include <fftw3.h>
-#include "FieldMethod.h"
 
 class Propagator {
 public:
     Propagator(int M_x, int N_s, double L, double N,
-            double R_g, double f, double flory_higgs, FieldMethod field_method);
+            double R_g, double f, double flory_higgs);
 
     virtual double w(double x, int n);
     void Save(const char *file_name);
@@ -34,7 +33,6 @@ protected:
     int M_x, N_s;
     double* w_A;
     double* w_B;
-    FieldMethod field_method;
 private:
     void Apply_W_To_Q(double** q, int src_N_s, int dest_N_s);
     void Propagate_n(int n);

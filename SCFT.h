@@ -6,7 +6,6 @@
 #include <string>
 #include <map>
 #include <random>
-#include "FieldMethod.h"
 
 #ifndef SINGLE_CHAIN_SCFT_H
 #define SINGLE_CHAIN_SCFT_H
@@ -18,7 +17,7 @@
 
 class SCFT {
 public:
-    SCFT(int M_x, int N_s, double L, double N, double R_g, double f, double flory_huggins, double mixing_parameter, FieldMethod field_type);
+    SCFT(int M_x, int N_s, double L, double N, double R_g, double f, double flory_huggins, double mixing_parameter);
     void Run();
     void Determine_Density_Differences();
     double Determine_Error(int index);
@@ -26,7 +25,6 @@ public:
     double DetermineVariance();
     double DetermineVarianceTotal();
 private:
-    FieldMethod field_method;
     qPropagator q_propagator;
     qDaggerPropagator q_star_propagator;
     int M_x,N_s;

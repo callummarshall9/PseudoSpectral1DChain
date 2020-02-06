@@ -9,7 +9,7 @@
 #include "mathutils.h"
 #include "Propagator.h"
 
-Propagator::Propagator(int M_x, int N_s, double L, double N, double R_g, double f, double flory_huggins, FieldMethod field_method) : M_x(M_x), N_s(N_s), R_g(R_g), L(L), f(f), N(N), flory_huggins(flory_huggins), field_method(field_method) {
+Propagator::Propagator(int M_x, int N_s, double L, double N, double R_g, double f, double flory_huggins) : M_x(M_x), N_s(N_s), R_g(R_g), L(L), f(f), N(N), flory_huggins(flory_huggins) {
     //M_x collaction points.
     //N_s integration steps.
     //L Box Length (R_g).
