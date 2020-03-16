@@ -9,7 +9,7 @@
 
 class qPropagator : public Propagator {
 public:
-    qPropagator(int M_x, int N_s, double L, double N, double R_g, double f, double flory_higgs);
+    qPropagator(int M_x, int N_s, double L, double N, double R_g, double f, double chiN);
     double w(double x, int n) override ;
 };
 

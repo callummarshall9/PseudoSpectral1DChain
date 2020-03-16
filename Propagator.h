@@ -7,20 +7,18 @@
 class Propagator {
 public:
     Propagator(int M_x, int N_s, double L, double N,
-            double R_g, double f, double flory_higgs);
+            double R_g, double f, double chiN);
 
     virtual double w(double x, int n);
     void Save(const char *file_name);
 
     double** GetPropagator();
-    double GetQ();
-    double GetL();
-    double GetRg();
-    double GetN();
 
     ~Propagator();
 
     double DetermineQ();
+    double Find_Max();
+    double Find_Min();
 
     void Output_Parameters();
     void Set_Fields(double* w_A, double* w_B);
@@ -29,7 +27,7 @@ public:
     double Q;
 
 protected:
-    double delta_x, delta_s,b, R_g,L,f,N, flory_huggins, s;
+    double delta_x, delta_s,b, R_g,L,f,N, chiN, s;
     int M_x, N_s;
     double* w_A;
     double* w_B;

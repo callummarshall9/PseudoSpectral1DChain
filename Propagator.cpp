@@ -9,7 +9,7 @@
 #include "mathutils.h"
 #include "Propagator.h"
 
-Propagator::Propagator(int M_x, int N_s, double L, double N, double R_g, double f, double flory_huggins) : M_x(M_x), N_s(N_s), R_g(R_g), L(L), f(f), N(N), flory_huggins(flory_huggins) {
+Propagator::Propagator(int M_x, int N_s, double L, double N, double R_g, double f, double chiN) : M_x(M_x), N_s(N_s), R_g(R_g), L(L), f(f), N(N), chiN(chiN) {
     //M_x collaction points.
     //N_s integration steps.
     //L Box Length (R_g).
@@ -35,9 +35,9 @@ Propagator::Propagator(int M_x, int N_s, double L, double N, double R_g, double 
 void Propagator::Output_Parameters() {
     std::cout << "M_x: " << M_x << '\n';
     std::cout << "N_s: " << N_s << '\n';
-    std::cout << "L: " << L << '\n';
-    std::cout << "N: " << N << '\n';
-    std::cout << "R_g: " << R_g << '\n';
+    std::cout << "Box Length L: " << L << '\n';
+    std::cout << "Chain Length N: " << N << '\n';
+    std::cout << "Radius of gyration R_g: " << R_g << '\n';
     std::cout << "Delta_x: " << delta_x << '\n';
     std::cout << "Delta s: " << delta_s << '\n';
     std::cout << "b: " << b << '\n';
@@ -69,6 +69,27 @@ void Propagator::Apply_W_To_Q(double **q, int src_N_s, int dest_N_s) {
         //This leads to the unscaled potential function is therefore w(x)/N.
     }
 }
+
+double Propagator::Find_Max() {
+    double max = q[0][N_s];
+    for(int i = 0; i < M_x; i++) {
+        if(q[i][N_s] > max) {
+            max = q[i][N_s];
+        }
+    }
+    return max;
+}
+
+double Propagator::Find_Min() {
+    double min = q[0][N_s];
+    for(int i = 0; i < M_x; i++) {
+        if(q[i][N_s] < min) {
+            min = q[i][N_s];
+        }
+    }
+    return min;
+}
+
 
 double Propagator::DetermineQ() {
     double sum = 0.0;

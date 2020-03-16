@@ -7,12 +7,14 @@
 #include "mathutils.h"
 #include "qDaggerPropagator.h"
 
-qDaggerPropagator::qDaggerPropagator(int M_x, int N_s, double L, double N, double R_g, double f, double flory_higgs) : Propagator(M_x, N_s, L, N, R_g, f, flory_higgs) {
+qDaggerPropagator::qDaggerPropagator(int M_x, int N_s, double L, double N, double R_g, double f, double chiN) : Propagator(M_x, N_s, L, N, R_g, f, chiN) {
 
 }
 
 
 double qDaggerPropagator::w(double x, int n) {
+    return 10.0 * sin(2 * M_PI * (x - L / 2.0) / L) / N;
+
     int index = x / delta_x;
     //Scale the fields by N.
     //Between [0,fN] field = w_A
