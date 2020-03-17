@@ -14,8 +14,6 @@ qPropagator::qPropagator(int M_x, int N_s, double L, double N, double R_g, doubl
 
 
 double qPropagator::w(double x, int n) {
-    double field = 10.0 * sin(2 * M_PI * (x - L / 2.0) / L) / N;
-return field;
     int index = x / delta_x;
     //Scale the fields by N.
     //Between [0,fN] field = w_A

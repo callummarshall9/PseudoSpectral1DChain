@@ -13,7 +13,7 @@ qDaggerPropagator::qDaggerPropagator(int M_x, int N_s, double L, double N, doubl
 
 
 double qDaggerPropagator::w(double x, int n) {
-    return 10.0 * sin(2 * M_PI * (x - L / 2.0) / L) / N;
+    //return 10.0 * sin(2 * M_PI * (x - L / 2.0) / L) / N;
 
     int index = x / delta_x;
     //Scale the fields by N.

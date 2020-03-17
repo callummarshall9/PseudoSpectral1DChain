@@ -60,10 +60,10 @@ inline double w(double x) {
 }*/
 
 int main(int argc, char** argv) {
-    const double N = 2000.0; // Chain length
+    const double N = 1000.0; // Chain length
     const double q_0 = 1.0;
-    const int N_s = 2000; // Number of integration steps along the chain
-    const int M_x = 256; // Grid points in x direction
+    const int N_s = 1000; // Number of integration steps along the chain
+    const int M_x = 64; // Grid points in x direction
 //const double R_g =  200; // chain gyration radius (unperturbed radius of gyration)
     const double box_length_rg = 3.2;
     const double L = (double)M_x * 1.0;//M_x * delta_x
@@ -71,6 +71,7 @@ int main(int argc, char** argv) {
     const double R_g =  L / box_length_rg; // chain gyration radius (unperturbed radius of gyration)
     const double b = sqrt(6) * R_g / sqrt(N);//Kuhn segment length
     const double delta_s = N/(N_s); // chain integration step size
+
 
     //xN=13, hence flory huggins x = 13/N.
     system("rm *.csv");

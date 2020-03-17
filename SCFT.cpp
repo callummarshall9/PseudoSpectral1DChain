@@ -13,14 +13,13 @@ SCFT::SCFT(int M_x, int N_s, double L, double N, double R_g, double f, double ch
     w_B = new double[M_x];
     delta_s = N / N_s;
     delta_x = L / M_x;
-    /*for(int i = 0; i < M_x; i++) {
+    for(int i = 0; i < M_x; i++) {
         //w_A[i] = dist(gen) * 0.1;
         //w_B[i] = dist(gen) * 0.1;
-        std::cout << L / 2.0 << '\n';
         const double value = 1.0 * sin(2 * M_PI * (i * delta_x - L / 2.0) / L);
         w_A[i] = -value;
         w_B[i] = value;
-    }*/
+    }
     /*w_B[0] = -5;
     int midpoint = M_x / 2;
     w_B[midpoint] = 5;*/
@@ -103,15 +102,7 @@ void SCFT::Update_Fields() {
 }
 
 void SCFT::Run() {
-    q_propagator.Output_Parameters();
-    q_propagator.Propagate();
-    q_star_propagator.Propagate();
-    Determine_Density_Differences();
-    Update_Fields();
-    int index = 9000;
-    std::string file_name = "hell_" + std::to_string(index) + ".csv";
-    Save(file_name);
-    /*
+
     int index = 1.0;
     double field_error_threshold = pow(10.0,-3.0);
     double variance_threshold = pow(10.0,-5.0);
@@ -126,7 +117,7 @@ void SCFT::Run() {
         Determine_Density_Differences();
         Update_Fields();
         std::string file_name = "hell_" + std::to_string(index) + ".csv";
-        if(index % 200 == 0) {
+        if(index % 200 == 0 || index < 20) {
             Save(file_name);
         }
         index++;
@@ -140,7 +131,7 @@ void SCFT::Run() {
     std::cout << index << " - Stdev: " << variance_error << '\n';
     std::cout << index << " - Field average: " << Determine_Average() << '\n';
     std::string file_name = "hell_" + std::to_string(index) + ".csv";
-    Save(file_name);*/
+    Save(file_name);
 }
 
 void SCFT::Save(std::string file_name) {
