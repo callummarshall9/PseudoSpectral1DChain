@@ -21,7 +21,7 @@ jobs:
     - uses: actions/checkout@v2
     
     - name: Install FFTW3
-      run: sudo apt-get install -y fftw3
+      run: sudo apt-get install -y fftw3*
     
     
     - name: Run cmake
